@@ -1,16 +1,17 @@
 import express from "express";
-import { activeUserGaugeMiddleware, requestCountMiddleware } from "./monitoring/requestCount";
+import { activeUserGaugeMiddleware, histogramMiddleware, requestCountMiddleware } from "./monitoring/requestCount";
 import client from "prom-client";
 
 const app = express();
 
 app.use(requestCountMiddleware);
 app.use(activeUserGaugeMiddleware)
+app.use(histogramMiddleware)
 
 app.use(express.json());
 
 app.get("/user", async (req, res) => {
-
+    new Promise((resolve) => setTimeout(resolve, 5000));
     res.json({
         name: "John Doe",
         age: 25,

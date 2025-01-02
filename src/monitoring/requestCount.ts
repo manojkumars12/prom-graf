@@ -12,6 +12,7 @@ export const requestCountMiddleware = (req: Request, res: Response, next: NextFu
 
     res.on('finish', () => {
         const endTime = Date.now();
+        console.log(`Request Took ${endTime - startTime}ms`);
         requestCount.inc({
             method: req.method,
             route: req.route? req.route.path : req.path,
@@ -36,11 +37,33 @@ export function activeUserGaugeMiddleware(req: Request, res: Response, next: Nex
     })
 
     res.on('finish', () => {
-        activeUserGauge.dec({
+            activeUserGauge.dec({
+                method: req.method,
+                route: req.route ? req.route.path : req.path,
+                status_code: res.statusCode
+            })
+    })
+    next();
+}
+
+
+export const httpRequestDurationMicroSecond = new client.Histogram({
+    name: 'http_request_duration_ms',
+    help: 'Duration of HTTP request in ms',
+    labelNames: ['method', 'route', 'code'],
+    buckets: [0.1, 5, 15, 50, 100, 300, 500, 1000, 3000, 5000]
+})
+
+export function histogramMiddleware(req: Request, res: Response, next: NextFunction) {
+    const startTime = Date.now();
+
+    res.on('finish', () => {
+        const endTime = Date.now();
+        httpRequestDurationMicroSecond.observe({
             method: req.method,
-            route: req.route ? req.route.path : req.path,
-            status_code: res.statusCode
-        })
+            route: req.path,
+            code: res.statusCode,
+        }, endTime - startTime);
     })
     next();
 }
